@@ -53,7 +53,7 @@ func main() {
 	max := flag.Bool("max", false, "If the max should be shown")
 	refreshRate := flag.Int64("refreshRate", 1, "The rate at which to refresh the calculated values in seconds")
 
-    flag.Parse()
+	flag.Parse()
 
 	scanner := bufio.NewScanner(os.Stdin)
 
@@ -71,15 +71,12 @@ func main() {
 
 	ticker := time.NewTicker(time.Duration(*refreshRate) * time.Second)
 
-
-
 	for {
 		select {
 
 		case <-ticker.C:
 			sort.Float64s(values)
-            fmt.Print("|")
-
+			fmt.Print("|")
 
 			for _, percentile := range percentiles.percentiles {
 				index := int(math.Floor(float64(len(values)) * percentile / 100.0))
@@ -88,21 +85,20 @@ func main() {
 				}
 			}
 
-            if *mean && len(values) > 0 {
-                sum := 0.0
-                for _, value := range values {
-                    sum += value
-                }
-                mean := sum/float64(len(values))
-                fmt.Printf(" Mean = %.2f      |", mean)
-            }
+			if *mean && len(values) > 0 {
+				sum := 0.0
+				for _, value := range values {
+					sum += value
+				}
+				mean := sum / float64(len(values))
+				fmt.Printf(" Mean = %.2f      |", mean)
+			}
 
-            if *max && len(values) > 0 {
-                fmt.Printf(" Max = %.2f      |", values[len(values) - 1])
-            }
+			if *max && len(values) > 0 {
+				fmt.Printf(" Max = %.2f      |", values[len(values)-1])
+			}
 
-
-            fmt.Println()
+			fmt.Println()
 			break
 		case val := <-valuesChan:
 			values = append(values, val)
