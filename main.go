@@ -60,14 +60,45 @@ func main() {
 	values := make([]float64, 0)
 	valuesChan := make(chan float64, 100)
 
-	for scanner.Scan() {
-		input := scanner.Text()
-		val, err := strconv.ParseFloat(input, 64)
-		if err != nil {
-			log.Fatal("An error occured parsing user input", err)
+	printOutput := func() {
+		sort.Float64s(values)
+		fmt.Print("|")
+
+		for _, percentile := range percentiles.percentiles {
+			index := int(math.Floor(float64(len(values)) * percentile / 100.0))
+			if index < len(values) {
+				fmt.Printf(" p%.0f = %.2f      |", percentile, values[index])
+			}
 		}
-		valuesChan <- val
+
+		if *mean && len(values) > 0 {
+			sum := 0.0
+			for _, value := range values {
+				sum += value
+			}
+			mean := sum / float64(len(values))
+			fmt.Printf(" Mean = %.2f      |", mean)
+		}
+
+		if *max && len(values) > 0 {
+			fmt.Printf(" Max = %.2f      |", values[len(values)-1])
+		}
+
+		fmt.Println()
 	}
+
+	go func() {
+		for scanner.Scan() {
+			input := scanner.Text()
+			val, err := strconv.ParseFloat(input, 64)
+			if err != nil {
+				log.Fatal("An error occured parsing user input", err)
+			}
+			valuesChan <- val
+		}
+		printOutput()
+		os.Exit(0)
+	}()
 
 	ticker := time.NewTicker(time.Duration(*refreshRate) * time.Second)
 
@@ -75,30 +106,7 @@ func main() {
 		select {
 
 		case <-ticker.C:
-			sort.Float64s(values)
-			fmt.Print("|")
-
-			for _, percentile := range percentiles.percentiles {
-				index := int(math.Floor(float64(len(values)) * percentile / 100.0))
-				if index < len(values) {
-					fmt.Printf(" p%.0f = %.2f      |", percentile, values[index])
-				}
-			}
-
-			if *mean && len(values) > 0 {
-				sum := 0.0
-				for _, value := range values {
-					sum += value
-				}
-				mean := sum / float64(len(values))
-				fmt.Printf(" Mean = %.2f      |", mean)
-			}
-
-			if *max && len(values) > 0 {
-				fmt.Printf(" Max = %.2f      |", values[len(values)-1])
-			}
-
-			fmt.Println()
+			printOutput()
 			break
 		case val := <-valuesChan:
 			values = append(values, val)
